@@ -1,0 +1,4 @@
+-cp src
+-neko bin/lineSorter.n
+-lib format
+-main Main
