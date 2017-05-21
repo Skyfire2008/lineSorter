@@ -9,6 +9,7 @@ import haxe.io.Input;
 import haxe.io.Bytes;
 
 import format.png.Reader;
+import format.png.Writer;
 import format.png.Tools;
 import format.png.Data;
 
@@ -24,7 +25,7 @@ class Main{
 	private static var bytesIn: Bytes;
 	private static var width: Int;
 	private static var height: Int;
-	private static var bytesOut: Int;
+	private static var bytesOut: Bytes;
 
 	static function main(){
 
@@ -37,7 +38,7 @@ class Main{
 		width=header.width;
 		height=header.height;
 		bytesIn=Tools.extract32(data);
-		bytesOut=Bytes.alloc(width*height*4);
+		bytesOut=Bytes.alloc(bytesIn.length);
 
 		//calculate the brightness of every line
 		var colorAccum: Vector<Color>=new Vector<Color>(width);
@@ -46,10 +47,10 @@ class Main{
 			var currentColor={r:0, g:0, b:0};
 
 			for(j in 0...height){
-				var pos=i*j>>2;
-				currentColor.r+=bytesIn.get(pos);
+				var pos=bytesPos(i, j);
+				currentColor.b+=bytesIn.get(pos);
 				currentColor.g+=bytesIn.get(pos+1);
-				currentColor.b+=bytesIn.get(pos+2);
+				currentColor.r+=bytesIn.get(pos+2);
 			}
 
 			colorAccum[i]=currentColor;
@@ -59,15 +60,34 @@ class Main{
 		//sort the lines by brightness
 		sort(lines, 0, lines.length);
 
+		//generate output image
 		for(i in 0...width){
 			var lineNum=lines[i].pos;
 
 			for(j in 0...height){
+				var inPos=bytesPos(lineNum, j);
+				var outPos=bytesPos(i, j);
+				bytesOut.set(outPos, bytesIn.get(inPos));
+				bytesOut.set(outPos+1, bytesIn.get(inPos+1));
+				bytesOut.set(outPos+2, bytesIn.get(inPos+2));
+				bytesOut.set(outPos+3, bytesIn.get(inPos+3));
 
+				/*
+				try{
+					var color=bytesIn.getInt64(bytesPos(lineNum, j));
+					bytesOut.setInt64(bytesPos(i, j), color);
+				}catch(e: Dynamic){
+					trace(e);
+				}*/
 			}
 		}
 
+		var writer=new Writer(File.write(Sys.args()[0]+"-output.png"));
+		writer.write(Tools.build32BGRA(width, height, bytesOut));
+	}
 
+	static inline function bytesPos(x: Int, y: Int): Int{
+		return (y*width+x)<<2;
 	}
 
 	static inline function swap<T>(v: Vector<T>, a: Int, b: Int){
