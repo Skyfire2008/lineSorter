@@ -44,7 +44,7 @@ class Main{
 		var colorAccum: Vector<Color>=new Vector<Color>(width);
 		var lines: Vector<Cell>=new Vector<Cell>(width);
 		for(i in 0...width){
-			var currentColor={r:0, g:0, b:0};
+			var currentColor=new Color(0, 0, 0);
 
 			for(j in 0...height){
 				var pos=bytesPos(i, j);
@@ -152,10 +152,67 @@ class Main{
 	}
 }
 
-typedef Color={
-	var r: Int;
-	var g: Int;
-	var b: Int;
+class HSL{
+	public var h: Float;
+	public var s: Float;
+	public var l: Float;
+
+	public function new(h: Float, s: Float, l: Float){
+		this.h=h;
+		this.s=s;
+		this.l=l;
+	}
+}
+
+class Color{
+	public var r: Int;
+	public var g: Int;
+	public var b: Int;
+
+	public function new(r: Int, g: Int, b: Int){
+		this.r=r;
+		this.g=g;
+		this.b=b;
+	}
+
+	public function toHSL(): HSL{
+		var R: Float=this.r/255.0;
+		var G: Float=this.g/255.0;
+		var B: Float=this.b/255.0;
+
+		var maxC=Math.max(Math.max(R, G), B);
+		var minC=Math.min(Math.min(R, G), B);
+
+		var L: Float=0.5*(minC+maxC); //calculate lightness
+
+		var S: Float=0;
+		var H: Float=0;
+
+		if(maxC!=minC){
+			if(L<0.5){ //calculate saturation
+				S=(maxC-minC)/(maxC+minC);
+			}else{
+				S=(maxC-minC)/(2-(maxC+minC));
+			}
+
+			if(R==maxC){ //calculate hue
+				H=(G-B)/(maxC-minC);
+			}else if(G==maxC){
+				H=2+(B-R)/(maxC-minC);
+			}else{
+				H=4+(R-G)/(maxC-minC);
+			}
+
+			H*=60;
+			if(H>360){
+				H-=360;
+			}else if(H<0){
+				H+=360;
+			}
+		}
+
+		return new HSL(H, S, L);
+	}
 }
 
 typedef Cell={
