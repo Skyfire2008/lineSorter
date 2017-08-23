@@ -55,7 +55,7 @@ class ArgumentHandler{
 				try{
 					index=handler.apply(args, index);
 				}catch(e: String){
-					throw 'option $arg was not used correctly';
+					throw 'Option "$arg" was not used correctly:\n\t$e';
 				}
 			}
 		}

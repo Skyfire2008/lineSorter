@@ -76,31 +76,30 @@ class Main{
 			}else if(arg.equals("l") || arg.equals("lightness")){
 				//do nothing
 			}else{
-				//TODO: generate error message
+				throw '"$arg" is not a valid argument';
 			}
 		});
 
 		handler.addArgOption('i'.code, "input", function(arg: String){
 			fileName=arg;
-			var reader=new Reader(File.read(fileName));
-			var data=reader.read();
-			var header=Tools.getHeader(data);
-			width=header.width;
-			height=header.height;
-			bytesIn=Tools.extract32(data);
-			bytesOut=Bytes.alloc(bytesIn.length);
 		});
 
-		handler.processArguments(Sys.args());
+		//process arguments
+		try{
+			handler.processArguments(Sys.args());
+		}catch(e: Dynamic){
+			stderr.writeString(cast(e, String)+"\n");
+			Sys.exit(1);
+		}
 
-		//read the image
-		/*var reader=new Reader(File.read(Sys.args()[0]));
+		//read input file
+		var reader=new Reader(File.read(fileName));
 		var data=reader.read();
 		var header=Tools.getHeader(data);
 		width=header.width;
 		height=header.height;
 		bytesIn=Tools.extract32(data);
-		bytesOut=Bytes.alloc(bytesIn.length);*/
+		bytesOut=Bytes.alloc(bytesIn.length);
 
 		//calculate the brightness of every line
 		var colorAccum: Vector<Color>=new Vector<Color>(width);
@@ -146,6 +145,7 @@ class Main{
 
 		var writer=new Writer(File.write(fileName+"-output.png"));
 		writer.write(Tools.build32BGRA(width, height, bytesOut));
+		Sys.exit(0);
 	}
 
 	static inline function bytesPos(x: Int, y: Int): Int{
