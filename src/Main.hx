@@ -14,6 +14,7 @@ import format.png.Tools;
 import format.png.Data;
 
 using Lambda;
+using Main.StrEquals;
 
 class Main{
 
@@ -22,23 +23,84 @@ class Main{
 
 	private static var stdin: Input=Sys.stdin();
 
+	private static var fileName: String;
 	private static var bytesIn: Bytes;
 	private static var width: Int;
 	private static var height: Int;
 	private static var bytesOut: Bytes;
 
+	private static var calcBright: Color -> Float = function(c: Color){
+		return 0.2126*c.r + 0.7152*c.g + 0.0722*c.b;
+	};
+
 	static function main(){
 
-		//var handler: ArgumentHandler=new ArgumentHandler();
+		//setup argument handler
+		var handler: ArgumentHandler=new ArgumentHandler();
+		handler.addArgOption('m'.code, "mode", function(arg: String){
+			
+			if(arg.equals("r") || arg.equals("red")){
+				calcBright=function(c: Color){
+					return c.r;
+				};
+
+			}else if(arg.equals("g") || arg.equals("green")){
+				calcBright=function(c: Color){
+					return c.g;
+				};
+
+			}else if(arg.equals("b") || arg.equals("blue")){
+				calcBright=function(c: Color){
+					return c.b;
+				};
+
+			}else if(arg.equals("h") || arg.equals("hue")){
+				calcBright=function(c: Color){
+
+					c.r/=height;
+					c.g/=height;
+					c.b/=height;
+
+					return c.toHSL().h;
+				};
+
+			}else if(arg.equals("s") || arg.equals("saturation")){
+				calcBright=function(c: Color){
+
+					c.r/=height;
+					c.g/=height;
+					c.b/=height;
+
+					return c.toHSL().s;
+				};
+			}else if(arg.equals("l") || arg.equals("lightness")){
+				//do nothing
+			}else{
+				//TODO: generate error message
+			}
+		});
+
+		handler.addArgOption('i'.code, "input", function(arg: String){
+			fileName=arg;
+			var reader=new Reader(File.read(fileName));
+			var data=reader.read();
+			var header=Tools.getHeader(data);
+			width=header.width;
+			height=header.height;
+			bytesIn=Tools.extract32(data);
+			bytesOut=Bytes.alloc(bytesIn.length);
+		});
+
+		handler.processArguments(Sys.args());
 
 		//read the image
-		var reader=new Reader(File.read(Sys.args()[0]));
+		/*var reader=new Reader(File.read(Sys.args()[0]));
 		var data=reader.read();
 		var header=Tools.getHeader(data);
 		width=header.width;
 		height=header.height;
 		bytesIn=Tools.extract32(data);
-		bytesOut=Bytes.alloc(bytesIn.length);
+		bytesOut=Bytes.alloc(bytesIn.length);*/
 
 		//calculate the brightness of every line
 		var colorAccum: Vector<Color>=new Vector<Color>(width);
@@ -54,7 +116,7 @@ class Main{
 			}
 
 			colorAccum[i]=currentColor;
-			lines[i]={bright: 0.2126*currentColor.r + 0.7152*currentColor.g + 0.0722*currentColor.b, pos: i};
+			lines[i]={bright: calcBright(currentColor), pos: i};
 		}
 
 		//sort the lines by brightness
@@ -82,7 +144,7 @@ class Main{
 			}
 		}
 
-		var writer=new Writer(File.write(Sys.args()[0]+"-output.png"));
+		var writer=new Writer(File.write(fileName+"-output.png"));
 		writer.write(Tools.build32BGRA(width, height, bytesOut));
 	}
 
@@ -152,6 +214,20 @@ class Main{
 	}
 }
 
+class StrEquals{
+	public static function equals(a: String, b: String): Bool{
+		if(a.length==b.length){
+			for(i in 0...a.length){
+				if(a.charCodeAt(i)!=b.charCodeAt(i)){
+					return false;
+				}
+			}
+			return true;
+		}
+		return false;
+	}
+}
+
 class HSL{
 	public var h: Float;
 	public var s: Float;
@@ -165,20 +241,20 @@ class HSL{
 }
 
 class Color{
-	public var r: Int;
-	public var g: Int;
-	public var b: Int;
+	public var r: Float;
+	public var g: Float;
+	public var b: Float;
 
-	public function new(r: Int, g: Int, b: Int){
+	public function new(r: Float, g: Float, b: Float){
 		this.r=r;
 		this.g=g;
 		this.b=b;
 	}
 
 	public function toHSL(): HSL{
-		var R: Float=this.r/255.0;
-		var G: Float=this.g/255.0;
-		var B: Float=this.b/255.0;
+		var R: Float=this.r/255;
+		var G: Float=this.g/255;
+		var B: Float=this.b/255;
 
 		var maxC=Math.max(Math.max(R, G), B);
 		var minC=Math.min(Math.min(R, G), B);
