@@ -29,6 +29,8 @@ class Main{
 	private static var height: Int;
 	private static var bytesOut: Bytes;
 
+	private static var lineWise: Bool=false;
+
 	private static var calcBright: Color -> Float = function(c: Color){
 		return 0.2126*c.r + 0.7152*c.g + 0.0722*c.b;
 	};
@@ -57,9 +59,11 @@ class Main{
 			}else if(arg.equals("h") || arg.equals("hue")){
 				calcBright=function(c: Color){
 
-					c.r/=height;
-					c.g/=height;
-					c.b/=height;
+					if(!lineWise){
+						c.r/=height;
+						c.g/=height;
+						c.b/=height;
+					}
 
 					return c.toHSL().h;
 				};
@@ -67,9 +71,11 @@ class Main{
 			}else if(arg.equals("s") || arg.equals("saturation")){
 				calcBright=function(c: Color){
 
-					c.r/=height;
-					c.g/=height;
-					c.b/=height;
+					if(!lineWise){
+						c.r/=height;
+						c.g/=height;
+						c.b/=height;
+					}
 
 					return c.toHSL().s;
 				};
@@ -82,6 +88,10 @@ class Main{
 
 		handler.addArgOption('i'.code, "input", function(arg: String){
 			fileName=arg;
+		});
+
+		handler.addNoArgOption('l'.code, "linewise", function(){
+			lineWise=true;
 		});
 
 		//process arguments
@@ -102,44 +112,68 @@ class Main{
 		bytesOut=Bytes.alloc(bytesIn.length);
 
 		//calculate the brightness of every line
-		var colorAccum: Vector<Color>=new Vector<Color>(width);
-		var lines: Vector<Cell>=new Vector<Cell>(width);
-		for(i in 0...width){
-			var currentColor=new Color(0, 0, 0);
+		if(!lineWise){
+			///NORMAL MODE
+			var colorAccum: Vector<Color>=new Vector<Color>(width);
+			var lines: Vector<Cell>=new Vector<Cell>(width);
+			for(i in 0...width){
+				var currentColor=new Color(0, 0, 0);
 
-			for(j in 0...height){
-				var pos=bytesPos(i, j);
-				currentColor.b+=bytesIn.get(pos);
-				currentColor.g+=bytesIn.get(pos+1);
-				currentColor.r+=bytesIn.get(pos+2);
+				for(j in 0...height){
+					var pos=bytesPos(i, j);
+					currentColor.b+=bytesIn.get(pos);
+					currentColor.g+=bytesIn.get(pos+1);
+					currentColor.r+=bytesIn.get(pos+2);
+				}
+
+				colorAccum[i]=currentColor;
+				lines[i]={bright: calcBright(currentColor), pos: i};
 			}
 
-			colorAccum[i]=currentColor;
-			lines[i]={bright: calcBright(currentColor), pos: i};
-		}
+			//sort the lines by brightness
+			sort(lines, 0, lines.length);
 
-		//sort the lines by brightness
-		sort(lines, 0, lines.length);
+			//generate output image
+			for(i in 0...width){
+				var lineNum=lines[i].pos;
 
-		//generate output image
-		for(i in 0...width){
-			var lineNum=lines[i].pos;
+				for(j in 0...height){
+					var inPos=bytesPos(lineNum, j);
+					var outPos=bytesPos(i, j);
+					bytesOut.set(outPos, bytesIn.get(inPos));
+					bytesOut.set(outPos+1, bytesIn.get(inPos+1));
+					bytesOut.set(outPos+2, bytesIn.get(inPos+2));
+					bytesOut.set(outPos+3, bytesIn.get(inPos+3));
 
-			for(j in 0...height){
-				var inPos=bytesPos(lineNum, j);
-				var outPos=bytesPos(i, j);
-				bytesOut.set(outPos, bytesIn.get(inPos));
-				bytesOut.set(outPos+1, bytesIn.get(inPos+1));
-				bytesOut.set(outPos+2, bytesIn.get(inPos+2));
-				bytesOut.set(outPos+3, bytesIn.get(inPos+3));
+				}
+			}
 
-				/*
-				try{
-					var color=bytesIn.getInt64(bytesPos(lineNum, j));
-					bytesOut.setInt64(bytesPos(i, j), color);
-				}catch(e: Dynamic){
-					trace(e);
-				}*/
+		}else{
+			//LINEWISE MODE
+
+			var line: Vector<Cell>=new Vector<Cell>(height);
+
+			for(i in 0...width){
+
+				//fill line vector
+				for(j in 0...height){
+					var pos=bytesPos(i, j);
+					var currentColor=new Color(bytesIn.get(pos), bytesIn.get(pos+1), bytesIn.get(pos+2));
+					line[j]={bright: calcBright(currentColor), pos: pos};
+				}
+
+				//sort line vector
+				sort(line, 0, line.length);
+
+				//write to output
+				for(j in 0...height){
+					var inPos=line[j].pos;
+					var outPos=bytesPos(i, j);
+					bytesOut.set(outPos, bytesIn.get(inPos));
+					bytesOut.set(outPos+1, bytesIn.get(inPos+1));
+					bytesOut.set(outPos+2, bytesIn.get(inPos+2));
+					bytesOut.set(outPos+3, bytesIn.get(inPos+3));
+				}
 			}
 		}
 
