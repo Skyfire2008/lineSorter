@@ -12,3 +12,6 @@ The following arguments can be used to change the behaviour of the utility:
 * *-i filename* - to specify the input file (required).
 * *-m (h|s|l|r|g|b)* - to specify the criterium used to sort the values. **H**, **S**, **L**, **R**, **G**, **B** stand for **hue**, **saturation**, **lightness**(default), **red**, **green** and **blue** respectively.
 * *-l* - to use the *line-wise* mode, sorts single pixel values within every vertical line of the image.
+
+## Album with examples
+http://imgur.com/a/gOzgk
