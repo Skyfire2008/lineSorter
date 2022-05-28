@@ -4,7 +4,7 @@ To build run "__haxe lineSorter.hxml__".
 You'll need the format library, which can be installed by using "__haxelib install format__".
 
 ## Running
-Run by executing "__neko bin/lineSorter.n -i *filename*__" from the command line. Only PNG is supported right now.
+Run by executing "__neko bin/lineSorter.n -i *filename*__" from the command line. Only PNG files are supported right now.
 The resulting file will be located at *filename-output.png*.
 
 ### Options:
